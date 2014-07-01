@@ -12,6 +12,7 @@ import org.apache.log4j.Logger;
 import ch.interlis.ili2c.Ili2c;
 import ch.interlis.ili2c.Ili2cException;
 import ch.interlis.ili2c.config.Configuration;
+import ch.interlis.ili2c.metamodel.AssociationDef;
 import ch.interlis.ili2c.metamodel.AttributeDef;
 import ch.interlis.ili2c.metamodel.RoleDef;
 import ch.interlis.ili2c.metamodel.ViewableTransferElement;
@@ -64,6 +65,17 @@ public class Ili2Reader
 				}else if(attro.obj instanceof RoleDef){
 					RoleDef role = (RoleDef) attro.obj;
 					logger.debug(role.toString());
+					String roleName = role.getName();
+					logger.debug(roleName.toString());
+					if(attro.embedded){
+						AssociationDef roleOwner = (AssociationDef) role.getContainer();
+					} else {
+							logger.debug("embedded");
+						if(!((AssociationDef)role.getContainer()).isLightweight()){
+							logger.debug("not emb -> not lightweight");
+						}
+					}
+
 				}
 
 			}
