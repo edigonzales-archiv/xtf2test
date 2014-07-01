@@ -2,6 +2,9 @@ package org.catais.interlis2;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -9,6 +12,7 @@ import org.apache.log4j.Logger;
 import ch.interlis.ili2c.Ili2c;
 import ch.interlis.ili2c.Ili2cException;
 import ch.interlis.ili2c.config.Configuration;
+import ch.interlis.ili2c.metamodel.AttributeDef;
 import ch.interlis.ili2c.metamodel.RoleDef;
 import ch.interlis.ili2c.metamodel.ViewableTransferElement;
 import ch.interlis.ilirepository.IliManager;
@@ -41,6 +45,33 @@ public class Ili2Reader
 //		}
 		
 //		logger.debug(transferViewables);
+		
+		Iterator it = transferViewables.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry pairs = (Map.Entry) it.next();
+			logger.debug(pairs.getKey() + ":"); 
+			logger.debug("-------------------------------------------------");
+			ViewableWrapper wrapper = (ViewableWrapper) pairs.getValue();
+			
+			List attrv = wrapper.getAttrv();
+			for(int i = 0; i < attrv.size(); i++) {
+				ViewableTransferElement attro = (ViewableTransferElement) attrv.get(i);
+				
+				if(attro.obj instanceof AttributeDef) {
+					AttributeDef attr =  (AttributeDef) attro.obj;
+					logger.debug(attr.toString());
+
+				}else if(attro.obj instanceof RoleDef){
+					RoleDef role = (RoleDef) attro.obj;
+					logger.debug(role.toString());
+				}
+
+			}
+			
+			
+			logger.debug("=================================================");
+			it.remove();
+		}
 
 		
 		
@@ -71,7 +102,7 @@ public class Ili2Reader
        	
        	if (formatMode == MODE_XTF) {
 //			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, inheritanceMapping);
-			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, 1);
+			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, 2);
        	}
        	
     	logger.debug( "interlis model compiled" );
