@@ -16,6 +16,102 @@ public class ModelUtility
 {
 	private ModelUtility(){};
 	
+	public static HashMap getItfTransferViewables(ch.interlis.ili2c.metamodel.TransferDescription td)
+	{
+		LinkedHashMap ret = new LinkedHashMap();
+		Iterator modeli = td.iterator();
+		while (modeli.hasNext()) {
+			Object mObj = modeli.next();
+			if (mObj instanceof Model) {
+				Model model = (Model) mObj;
+				if (model instanceof TypeModel) {
+					continue;
+				}
+				if (model instanceof PredefinedModel) {
+					continue;
+				}
+				Iterator topici = model.iterator();
+				while (topici.hasNext()) {
+					Object tObj = topici.next();
+					if (tObj instanceof Topic) {
+						Topic topic = (Topic) tObj;
+						Iterator iter = topic.getViewables().iterator();
+						while (iter.hasNext()) {
+							Object obj = iter.next();
+							if (obj instanceof Viewable) {
+								Viewable v = (Viewable) obj;
+								if(isPureRefAssoc(v)){
+									continue;
+								}
+								//log.logMessageString("getTransferViewables() leave <"+v+">",IFMELogFile.FME_INFORM);
+								String className = v.getScopedName(null);
+								ViewableWrapper viewableWrapper =
+									new ViewableWrapper(className, v);
+								java.util.List attrv =
+										ch.interlis.iom_j.itf.ModelUtilities.getIli1AttrList(
+										(AbstractClassDef) v);
+								viewableWrapper.setAttrv(attrv);
+								ret.put(
+									viewableWrapper.getFmeFeatureType(),
+									viewableWrapper);
+								// set geom attr in wrapper
+								Iterator attri = v.getAttributes();
+								while (attri.hasNext()) {
+									Object attrObj = attri.next();
+									if (attrObj instanceof AttributeDef) {
+										AttributeDef attr =
+											(AttributeDef) attrObj;
+										Type type =
+											Type.findReal(attr.getDomain());
+										if (type instanceof PolylineType 
+											|| type instanceof SurfaceOrAreaType 
+											|| type instanceof CoordType
+											){
+												viewableWrapper.setGeomAttr4FME(attr);
+												break;
+										}
+									}
+								}
+								// add helper tables of surface and area attributes
+								attri = v.getAttributes();
+								while (attri.hasNext()) {
+									Object attrObj = attri.next();
+									if (attrObj instanceof AttributeDef) {
+										AttributeDef attr =
+											(AttributeDef) attrObj;
+										Type type =
+											Type.findReal(attr.getDomain());
+										if (type
+											instanceof SurfaceOrAreaType) {
+											String name =
+												v.getContainer().getScopedName(
+													null)
+													+ "."
+													+ v.getName()
+													+ "_"
+													+ attr.getName();
+											ViewableWrapper wrapper =
+												new ViewableWrapper(name);
+											wrapper.setGeomAttr4FME(attr);
+											ArrayList helper_attrv=new ArrayList();
+											helper_attrv.add(new ViewableTransferElement(attr));
+											wrapper.setAttrv(helper_attrv);
+											ret.put(
+												wrapper.getFmeFeatureType(),
+												wrapper);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return ret;
+	}
+	
+	
 	public static LinkedHashMap getXtfTransferViewables(ch.interlis.ili2c.metamodel.TransferDescription td,int inheritanceMappingStrategy)
 	{
 		Logger logger = Logger.getLogger(ModelUtility.class);
@@ -75,17 +171,23 @@ public class ModelUtility
 		
 		while(vi.hasNext()) {
 			Viewable v = (Viewable) vi.next();
-			logger.debug("leaveclass <"+v+">");
+			logger.debug("leaveclass2 <"+v+">");
+			logger.debug(v.getContainerOrSame(Model.class).toString());
 			// is it a CLASS defined in model INTERLIS? 
 			if((v instanceof Table) && ((Table)v).isIdentifiable() && v.getContainerOrSame(Model.class) == td.INTERLIS) {
 				// skip it; use in any case sub-class strategy
+				logger.debug("continüüü");
 				continue;
 			}
 			Viewable root = null;
 			
 			if (inheritanceMappingStrategy==InheritanceMapping.SUBCLASS) {
+				
+				logger.debug("SUBCLASS");
+				
 				// is v a STRUCTURE?
 				if (isStructure(v)) {
+					logger.debug("isStructure");
 					// use in any case a super-class strategy
 					root=getRoot(v);
 				} else if (isEmbeddedAssocWithAttrs(v)) {
@@ -99,6 +201,7 @@ public class ModelUtility
 					root=null;
 				}
 			} else {
+				logger.debug("getRoot" + v);
 				root = getRoot(v);
 			}
 			
@@ -109,6 +212,10 @@ public class ModelUtility
 					basev.put(v,new LinkedHashSet());
 				}
 			} else {
+				
+				
+				logger.debug("root NOT NULL");
+				
 				LinkedHashSet extv;
 				if (basev.containsKey(root)) {
 					extv = (LinkedHashSet) basev.get(root);

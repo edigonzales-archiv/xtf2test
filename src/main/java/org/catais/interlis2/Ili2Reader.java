@@ -50,8 +50,8 @@ public class Ili2Reader
 		Iterator it = transferViewables.entrySet().iterator();
 		while (it.hasNext()) {
 			Map.Entry pairs = (Map.Entry) it.next();
-			logger.debug(pairs.getKey() + ":"); 
-			logger.debug("-------------------------------------------------");
+//			logger.debug(pairs.getKey() + ":"); 
+//			logger.debug("-------------------------------------------------");
 			ViewableWrapper wrapper = (ViewableWrapper) pairs.getValue();
 			
 			List attrv = wrapper.getAttrv();
@@ -60,19 +60,19 @@ public class Ili2Reader
 				
 				if(attro.obj instanceof AttributeDef) {
 					AttributeDef attr =  (AttributeDef) attro.obj;
-					logger.debug(attr.toString());
+//					logger.debug(attr.toString());
 
 				}else if(attro.obj instanceof RoleDef){
 					RoleDef role = (RoleDef) attro.obj;
-					logger.debug(role.toString());
+//					logger.debug(role.toString());
 					String roleName = role.getName();
-					logger.debug(roleName.toString());
+//					logger.debug(roleName.toString());
 					if(attro.embedded){
 						AssociationDef roleOwner = (AssociationDef) role.getContainer();
 					} else {
-							logger.debug("embedded");
+//							logger.debug("embedded?????");
 						if(!((AssociationDef)role.getContainer()).isLightweight()){
-							logger.debug("not emb -> not lightweight");
+//							logger.debug("not emb -> not lightweight");
 						}
 					}
 
@@ -81,7 +81,7 @@ public class Ili2Reader
 			}
 			
 			
-			logger.debug("=================================================");
+//			logger.debug("=================================================");
 			it.remove();
 		}
 
@@ -97,8 +97,11 @@ public class Ili2Reader
     	ArrayList modelNames = new ArrayList();
     	
     	modelNames.add("Nutzungsplanung_V1");
+//    	modelNames.add("MOpublic03_ili2_v13");
 //    	modelNames.add("Nutzungsplanung_KtSO_V20");
+//     	modelNames.add("DM01AVCH24D");
     	
+//    	Configuration config = manager.getConfig(modelNames, 1.0);
     	Configuration config = manager.getConfig(modelNames, 2.3);
     	iliTd = Ili2c.runCompiler(config);
     	
@@ -115,7 +118,11 @@ public class Ili2Reader
        	if (formatMode == MODE_XTF) {
 //			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, inheritanceMapping);
 			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, 2);
+       	} else if (formatMode == MODE_ITF) {
+			transferViewables = ModelUtility.getItfTransferViewables(iliTd);
        	}
+       		
+       	
        	
     	logger.debug( "interlis model compiled" );
 
