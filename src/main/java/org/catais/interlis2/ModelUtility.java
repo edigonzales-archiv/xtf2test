@@ -142,6 +142,10 @@ public class ModelUtility
 					if ( tObj instanceof Domain ) {
 						
 						Type domainType = ((Domain) tObj).getType();
+						
+						logger.debug(domainType.toString());
+
+						
 						if (domainType instanceof EnumerationType) 
 						{
 							logger.debug("** Enumerations MODEL");
@@ -157,12 +161,15 @@ public class ModelUtility
 
 							for ( int i = 0; i < ev.size(); i++ ) 
 							{
-								logger.debug(ev.get(i));
+//								logger.debug(ev.get(i));
 //								String foo = "INSERT INTO " + schema + "." + enumName + "(code, code_txt) VALUES (" + i + ", '" + ev.get(i) + "');\n";
 //								enums.append(foo);
 							}
 
 							
+						} else if (domainType instanceof TextOIDType) {
+							TextOIDType oidType = (TextOIDType) domainType;
+							logger.debug(oidType.getOIDType());
 						}
 						
 						
@@ -179,6 +186,9 @@ public class ModelUtility
 								logger.debug(obj.toString());
 
 								Type domainType = ((Domain) obj).getType();
+								
+								logger.debug(domainType.toString());
+								
 								if (domainType instanceof EnumerationType) {
 									logger.debug("** Enumerations TOPIC");
 									
@@ -193,7 +203,7 @@ public class ModelUtility
 
 									for ( int i = 0; i < ev.size(); i++ ) 
 									{
-										logger.debug(ev.get(i));
+//										logger.debug(ev.get(i));
 									}
 								}
 							} else if (obj instanceof Viewable) {
@@ -208,8 +218,8 @@ public class ModelUtility
 									 
 									continue;
 								}
-							logger.debug("leaveclass (Topic) <"+v+">");
-							leaveclassv.add(v);
+								logger.debug("leaveclass (Topic) <"+v+">");
+								leaveclassv.add(v);
 							}
 						}
 					} else if (tObj instanceof Viewable) { // STRUCTURE, .. ?
@@ -329,6 +339,9 @@ public class ModelUtility
 			logger.debug("ScopedName: " + v.getScopedName(null));
 			
 			// hier sql create table? inkl. enumerations in table?
+			// wie komme ich an die OID bedingung? uuid etc. für model anscheinend gelöst. siehe oben domain
+			// bag lists? modell?
+			// könnte ich die importierten enumerations nicht erst bei der tabelle behandeln? sonst importieren ich ja jeden mist?!
 			
 
 			ViewableWrapper wrapper=new ViewableWrapper(v.getScopedName(null),v);
