@@ -47,43 +47,43 @@ public class Ili2Reader
 		
 //		logger.debug(transferViewables);
 		
-		Iterator it = transferViewables.entrySet().iterator();
-		while (it.hasNext()) {
-			Map.Entry pairs = (Map.Entry) it.next();
+//		Iterator it = transferViewables.entrySet().iterator();
+//		while (it.hasNext()) {
+//			Map.Entry pairs = (Map.Entry) it.next();
 //			logger.debug(pairs.getKey() + ":"); 
 //			logger.debug("-------------------------------------------------");
-			ViewableWrapper wrapper = (ViewableWrapper) pairs.getValue();
-			
-			List attrv = wrapper.getAttrv();
-			for(int i = 0; i < attrv.size(); i++) {
-				ViewableTransferElement attro = (ViewableTransferElement) attrv.get(i);
-				
-				if(attro.obj instanceof AttributeDef) {
-					AttributeDef attr =  (AttributeDef) attro.obj;
+//			ViewableWrapper wrapper = (ViewableWrapper) pairs.getValue();
+//			
+//			List attrv = wrapper.getAttrv();
+//			for(int i = 0; i < attrv.size(); i++) {
+//				ViewableTransferElement attro = (ViewableTransferElement) attrv.get(i);
+//				
+//				if(attro.obj instanceof AttributeDef) {
+//					AttributeDef attr =  (AttributeDef) attro.obj;
 //					logger.debug(attr.toString());
-
-				}else if(attro.obj instanceof RoleDef){
-					RoleDef role = (RoleDef) attro.obj;
+//
+//				}else if(attro.obj instanceof RoleDef){
+//					RoleDef role = (RoleDef) attro.obj;
 //					logger.debug(role.toString());
-					String roleName = role.getName();
+//					String roleName = role.getName();
 //					logger.debug(roleName.toString());
-					if(attro.embedded){
-						AssociationDef roleOwner = (AssociationDef) role.getContainer();
-					} else {
+//					if(attro.embedded){
+//						AssociationDef roleOwner = (AssociationDef) role.getContainer();
+//					} else {
 //							logger.debug("embedded?????");
-						if(!((AssociationDef)role.getContainer()).isLightweight()){
+//						if(!((AssociationDef)role.getContainer()).isLightweight()){
 //							logger.debug("not emb -> not lightweight");
-						}
-					}
-
-				}
-
-			}
-			
-			
+//						}
+//					}
+//
+//				}
+//
+//			}
+//			
+//			
 //			logger.debug("=================================================");
-			it.remove();
-		}
+//			it.remove();
+//		}
 
 		
 		
@@ -99,6 +99,7 @@ public class Ili2Reader
     	modelNames.add("Nutzungsplanung_V1");
 //    	modelNames.add("MOpublic03_ili2_v13");
 //    	modelNames.add("Nutzungsplanung_KtSO_V20");
+//    	modelNames.add("Nutzungsplanung_KtSO_V21");
 //     	modelNames.add("DM01AVCH24D");
     	
 //    	Configuration config = manager.getConfig(modelNames, 1.0);
@@ -117,7 +118,9 @@ public class Ili2Reader
        	
        	if (formatMode == MODE_XTF) {
 //			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, inheritanceMapping);
-			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, 2);
+//			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, 2);
+       		
+       		String sql = ModelUtility.getPgSqlFromIli2(iliTd, 2);
        	} else if (formatMode == MODE_ITF) {
 			transferViewables = ModelUtility.getItfTransferViewables(iliTd);
        	}

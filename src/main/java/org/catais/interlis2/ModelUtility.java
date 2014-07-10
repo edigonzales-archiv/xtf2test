@@ -111,6 +111,167 @@ public class ModelUtility
 		return ret;
 	}
 	
+
+	public static String getPgSqlFromIli2(ch.interlis.ili2c.metamodel.TransferDescription td, int inheritanceMappingStrategy) {
+		StringBuffer sql = new StringBuffer();
+		
+		Logger logger = Logger.getLogger(ModelUtility.class);
+		logger.setLevel(Level.DEBUG);
+
+		LinkedHashSet leaveclassv = new LinkedHashSet();
+
+		// for all models
+		Iterator modeli = td.iterator ();
+		while (modeli.hasNext ()) {
+			Object mObj = modeli.next();
+
+			if (mObj instanceof Model) {
+				Model model=(Model)mObj;
+				
+//				logger.debug("model <"+model+">"); // MODEL INTERLIS, REFSYSTEM MODEL CoordSys, TYPE MODEL InternationalCodes_V1.... und MODEL Nutzungsplanung_V1
+
+				Iterator topici = model.iterator();
+				while (topici.hasNext()) {
+					Object tObj = topici.next(); // STRUCTURE, DOMAIN, TOPIC
+					
+					logger.debug(tObj.toString());
+					
+					if (tObj instanceof Topic) { // TOPIC
+						Topic topic=(Topic)tObj;
+						
+//						logger.debug("topic <"+topic+">");
+						
+						Iterator iter = topic.getViewables().iterator();
+						while (iter.hasNext()) {
+							Object obj = iter.next();
+							if (obj instanceof Viewable) { // CLASS, STRUCTURE, ASSOCIATION
+								Viewable v = (Viewable) obj;
+								if(isDerivedAssoc(v) 
+										|| isPureRefAssoc(v) // Wenns nur ein billiger foreign key gibt. -> Kommt das als RoleDef nochmals?
+										|| isTransientView(v)){
+									
+//									logger.debug("isPureRefAssoc??: " + v.toString());
+									 
+									continue;
+								}
+//								logger.debug("leaveclass (Topic) <"+v+">");
+								leaveclassv.add(v);
+							}
+						}
+					} else if (tObj instanceof Viewable) { // STRUCTURE, .. ?
+						Viewable v = (Viewable)tObj;
+						if(isDerivedAssoc(v) 
+								|| isPureRefAssoc(v) 
+								|| isTransientView(v)){
+							continue;
+						}
+//						logger.debug("leaveclass (Viewable) <"+v+">");
+						leaveclassv.add(v);
+					}	
+				}	
+			}
+		}
+		
+		logger.debug("1. Runde: *************************************************************************");
+		logger.debug(leaveclassv.toString());
+		logger.debug("*************************************************************************");
+
+		// find base classes and add possible extensions
+		Iterator vi = leaveclassv.iterator();
+		LinkedHashMap basev = new LinkedHashMap(); // map<Viewable root,HashSet<Viewable extensions>> 
+		
+		while(vi.hasNext()) {
+			logger.debug("===========================================================================");
+			Viewable v = (Viewable) vi.next();
+			logger.debug("leaveclass <"+v+">");
+//			logger.debug(v.getContainerOrSame(Model.class).toString());
+			// is it a CLASS defined in model INTERLIS? 
+			if((v instanceof Table) && ((Table)v).isIdentifiable() && v.getContainerOrSame(Model.class) == td.INTERLIS) {
+				// skip it; use in any case sub-class strategy
+				continue;
+			}
+			Viewable root = null;
+
+			if (inheritanceMappingStrategy == InheritanceMapping.SUBCLASS) {			
+				// is v a STRUCTURE?
+				if (isStructure(v)) {
+					// use in any case a super-class strategy
+					root = getRoot(v); // kann auch wieder "null" sein?! Z.B. falls v STRUCTURE ist (wie bei LineStructure). Aber nicht wenn es ein STRUCTURE ist, das EXTENDed ist (z.B. STRUCTURE AdministrativeUnits_V1.CountryNames.CountryName)
+				} else if (isEmbeddedAssocWithAttrs(v)) {
+					// use in any case a super-class strategy
+					root = getRoot(v);
+				} else {
+					// CLASS or ASSOCIATION
+					if(v.isAbstract()){
+						continue; // Abstrakte Klassen werden nicht berücksichtigt.
+					}
+					root=null;
+				}
+			} else { // SUPERCLASS
+				logger.debug("getRoot" + v);
+				root = getRoot(v);
+			}
+			
+			logger.debug("  root <"+root+">");
+			
+			// Nur Objekte, die root == null haben (also 'root' sind) werden basev hinzugefügt (nur key, kein object).
+			// Falls root <> null wird dieses root basev hinzugefügt resp. (da ist es ja) es wird
+			// dem root Element ein Objekt hinzugefügt (bis jetzt war es new LinkedHashMap().
+			// -> in basev sind nur root Objekte. (mit den Ausnahmen, z.B. für SUBCLASS keine abstrakten Klassen.)
+			if (root == null) {
+				if (!basev.containsKey(v)) {
+					logger.debug("add to basev: " + v.toString());
+					basev.put(v,new LinkedHashSet());
+				}
+			} else {
+
+				logger.debug("root NOT NULL");
+				
+				LinkedHashSet extv;
+				if (basev.containsKey(root)) {
+					extv = (LinkedHashSet) basev.get(root);
+					logger.debug(extv);
+				} else {
+					extv = new LinkedHashSet();
+					basev.put(root, extv);
+					logger.debug("else");
+				}
+				while (v!=root) {
+					extv.add(v);
+					v=(Viewable)v.getExtending();
+					logger.debug(v);
+				}
+
+			}			
+			logger.debug("===========================================================================");
+		}
+		
+		// Abstrakte Klassen müssten aber hier ihre geerbten Attribute holen?!
+		
+//		logger.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+//		
+//		// build list of attributes
+//		vi = basev.keySet().iterator();
+//		LinkedHashMap ret = new LinkedHashMap();
+//		while(vi.hasNext()) {
+//			logger.debug("===========================================================================");
+//
+//			Viewable v = (Viewable) vi.next();
+//			logger.debug("baseclass <"+v+">");
+//			ArrayList attrv=new ArrayList();
+//			mergeAttrs(attrv,v,true);
+//			
+//			logger.debug((LinkedHashSet)basev.get(v));
+//			logger.debug((ArrayList)attrv);
+//			
+//			logger.debug("===========================================================================");
+//		}
+//		
+//		
+//		logger.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+		return sql.toString();
+	}
+	
 	
 	public static LinkedHashMap getXtfTransferViewables(ch.interlis.ili2c.metamodel.TransferDescription td,int inheritanceMappingStrategy)
 	{
