@@ -215,8 +215,8 @@ public class ModelUtility
 			logger.debug("  root <"+root+">");
 			
 			// Nur Objekte, die root == null haben (also 'root' sind) werden basev hinzugefügt (nur key, kein object).
-			// Falls root <> null wird dieses root basev hinzugefügt resp. (da ist es ja) es wird
-			// dem root Element ein Objekt hinzugefügt (bis jetzt war es new LinkedHashMap().
+			// Falls root <> null wird dieses root basev hinzugefügt resp. (vorhanden ist es ja wo es als "v" gekommen ist) es wird
+			// dem root Element ein Objekt hinzugefügt (bis jetzt war es new LinkedHashMap() mit allen (? while-schleife) vererbten klassen:
 			// -> in basev sind nur root Objekte. (mit den Ausnahmen, z.B. für SUBCLASS keine abstrakten Klassen.)
 			if (root == null) {
 				if (!basev.containsKey(v)) {
@@ -237,38 +237,86 @@ public class ModelUtility
 					logger.debug("else");
 				}
 				while (v!=root) {
+					logger.debug(v);					
 					extv.add(v);
 					v=(Viewable)v.getExtending();
-					logger.debug(v);
 				}
+				logger.debug(extv.toString());
 
 			}			
 			logger.debug("===========================================================================");
 		}
 		
-		// Abstrakte Klassen müssten aber hier ihre geerbten Attribute holen?!
+				
+		logger.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
 		
-//		logger.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
-//		
-//		// build list of attributes
-//		vi = basev.keySet().iterator();
-//		LinkedHashMap ret = new LinkedHashMap();
-//		while(vi.hasNext()) {
-//			logger.debug("===========================================================================");
-//
-//			Viewable v = (Viewable) vi.next();
-//			logger.debug("baseclass <"+v+">");
-//			ArrayList attrv=new ArrayList();
-//			mergeAttrs(attrv,v,true);
-//			
-//			logger.debug((LinkedHashSet)basev.get(v));
-//			logger.debug((ArrayList)attrv);
-//			
-//			logger.debug("===========================================================================");
-//		}
-//		
-//		
-//		logger.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+		// build list of attributes
+		vi = basev.keySet().iterator();
+		LinkedHashMap ret = new LinkedHashMap();
+		while(vi.hasNext()) {
+			logger.debug("===========================================================================");
+
+			Viewable v = (Viewable) vi.next();
+			logger.debug("baseclass <"+v+">"); // Verebte Klassen besitzen von abstrakten Klassen besitzen bereits deren Attribute.
+			ArrayList attrv=new ArrayList();
+			mergeAttrs(attrv,v,true);
+
+			logger.debug("vorher (base): " + (ArrayList)attrv);
+			
+			Iterator exti=((LinkedHashSet)basev.get(v)).iterator(); // Hier werden alle extending Klassen durchgenudelt.
+			while(exti.hasNext()){
+				Viewable ext=(Viewable)exti.next();
+				logger.debug("  ext <"+ext+">");
+				mergeAttrs(attrv,ext,false);
+			}
+
+			logger.debug("nacher (ext): " + (ArrayList)attrv);
+			
+			logger.debug("ScopedName: " + v.getScopedName(null));
+
+			ViewableWrapper wrapper=new ViewableWrapper(v.getScopedName(null),v);
+			wrapper.setAttrv(attrv);
+			boolean isEncodedAsStruct=isStructure(v) || isEmbeddedAssocWithAttrs(v);
+			for (int i = 0; i<attrv.size(); i++) {
+				ViewableTransferElement attro = (ViewableTransferElement) attrv.get(i);
+				if (attro.obj instanceof AttributeDef) {
+					AttributeDef attr=(AttributeDef)attro.obj;
+					Type type=attr.getDomainResolvingAliases();
+					if (type instanceof PolylineType 
+							|| type instanceof SurfaceOrAreaType
+							|| type instanceof CoordType) {
+						
+						logger.debug("GEOMETRIE...");
+						
+						if ((type instanceof CoordType) && ((CoordType)type).getDimensions().length == 1) {
+							// encode 1d coord as fme attribute and not as fme-geom
+							logger.debug("Dimension 1");
+						} else if(!isEncodedAsStruct) {
+							logger.debug("v ist keine Structure");
+							wrapper.setGeomAttr4FME(attr);
+							break;
+						}
+					}
+				}
+			}
+			
+			ret.put(wrapper.getFmeFeatureType(),wrapper);
+			exti=((LinkedHashSet)basev.get(v)).iterator();
+			while(exti.hasNext()){
+				Viewable ext=(Viewable)exti.next();
+//				logger.debug("  ext2 <"+ext+">");
+				ret.put(ext.getScopedName(null),wrapper);
+			}
+
+
+			
+			
+			
+			logger.debug("===========================================================================");
+		}
+		
+		
+		logger.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
 		return sql.toString();
 	}
 	
