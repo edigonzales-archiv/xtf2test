@@ -96,10 +96,10 @@ public class Ili2Reader
     	manager.setRepositories( repositories );
     	ArrayList modelNames = new ArrayList();
     	
-    	modelNames.add("Nutzungsplanung_V1");
+//    	modelNames.add("Nutzungsplanung_V1");
 //    	modelNames.add("MOpublic03_ili2_v13");
 //    	modelNames.add("Nutzungsplanung_KtSO_V20");
-//    	modelNames.add("Nutzungsplanung_KtSO_V21");
+    	modelNames.add("Nutzungsplanung_KtSO_V21");
 //     	modelNames.add("DM01AVCH24D");
     	
 //    	Configuration config = manager.getConfig(modelNames, 1.0);

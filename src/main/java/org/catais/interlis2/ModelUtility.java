@@ -117,11 +117,14 @@ public class ModelUtility
 		
 		Logger logger = Logger.getLogger(ModelUtility.class);
 		logger.setLevel(Level.DEBUG);
+				
+		logger.debug(td.getLastModel());
+		logger.debug(td.getName());
 
 		LinkedHashSet leaveclassv = new LinkedHashSet();
 
 		// for all models
-		Iterator modeli = td.iterator ();
+		Iterator modeli = td.iterator();
 		while (modeli.hasNext ()) {
 			Object mObj = modeli.next();
 
@@ -129,33 +132,84 @@ public class ModelUtility
 				Model model=(Model)mObj;
 				
 //				logger.debug("model <"+model+">"); // MODEL INTERLIS, REFSYSTEM MODEL CoordSys, TYPE MODEL InternationalCodes_V1.... und MODEL Nutzungsplanung_V1
-
+				
 				Iterator topici = model.iterator();
 				while (topici.hasNext()) {
 					Object tObj = topici.next(); // STRUCTURE, DOMAIN, TOPIC
 					
 					logger.debug(tObj.toString());
 					
-					if (tObj instanceof Topic) { // TOPIC
+					if ( tObj instanceof Domain ) {
+						
+						Type domainType = ((Domain) tObj).getType();
+						if (domainType instanceof EnumerationType) 
+						{
+							logger.debug("** Enumerations MODEL");
+							
+							EnumerationType enumerationType = (EnumerationType) domainType;
+							ch.interlis.ili2c.metamodel.Enumeration enumerations = (ch.interlis.ili2c.metamodel.Enumeration) enumerationType.getConsolidatedEnumeration();
+							
+							String enumName = model.getName().toLowerCase() + "_" + ((Domain) tObj).getName().toLowerCase();
+							logger.debug(enumName);
+							
+							ArrayList ev = new ArrayList();
+							ch.interlis.iom_j.itf.ModelUtilities.buildEnumList(ev, "", ((EnumerationType) domainType).getConsolidatedEnumeration());
+
+							for ( int i = 0; i < ev.size(); i++ ) 
+							{
+								logger.debug(ev.get(i));
+//								String foo = "INSERT INTO " + schema + "." + enumName + "(code, code_txt) VALUES (" + i + ", '" + ev.get(i) + "');\n";
+//								enums.append(foo);
+							}
+
+							
+						}
+						
+						
+					} else if (tObj instanceof Topic) { // TOPIC
 						Topic topic=(Topic)tObj;
 						
 //						logger.debug("topic <"+topic+">");
 						
-						Iterator iter = topic.getViewables().iterator();
+						Iterator iter = topic.iterator();
 						while (iter.hasNext()) {
 							Object obj = iter.next();
-							if (obj instanceof Viewable) { // CLASS, STRUCTURE, ASSOCIATION
+							
+							if (obj instanceof Domain) {
+								logger.debug(obj.toString());
+
+								Type domainType = ((Domain) obj).getType();
+								if (domainType instanceof EnumerationType) {
+									logger.debug("** Enumerations TOPIC");
+									
+									EnumerationType enumerationType = (EnumerationType) domainType;
+									ch.interlis.ili2c.metamodel.Enumeration enumerations = (ch.interlis.ili2c.metamodel.Enumeration) enumerationType.getConsolidatedEnumeration();
+									
+									String enumName = model.getName().toLowerCase() + "_" + ((Domain) obj).getName().toLowerCase();
+									logger.debug(enumName);
+									
+									ArrayList ev = new ArrayList();
+									ch.interlis.iom_j.itf.ModelUtilities.buildEnumList(ev, "", ((EnumerationType) domainType).getConsolidatedEnumeration());
+
+									for ( int i = 0; i < ev.size(); i++ ) 
+									{
+										logger.debug(ev.get(i));
+									}
+								}
+							} else if (obj instanceof Viewable) {
+								logger.debug(obj.toString());
+
 								Viewable v = (Viewable) obj;
 								if(isDerivedAssoc(v) 
 										|| isPureRefAssoc(v) // Wenns nur ein billiger foreign key gibt. -> Kommt das als RoleDef nochmals?
 										|| isTransientView(v)){
 									
-//									logger.debug("isPureRefAssoc??: " + v.toString());
+									logger.debug("isPureRefAssoc??: " + v.toString());
 									 
 									continue;
 								}
-//								logger.debug("leaveclass (Topic) <"+v+">");
-								leaveclassv.add(v);
+							logger.debug("leaveclass (Topic) <"+v+">");
+							leaveclassv.add(v);
 							}
 						}
 					} else if (tObj instanceof Viewable) { // STRUCTURE, .. ?
@@ -273,6 +327,9 @@ public class ModelUtility
 			logger.debug("nacher (ext): " + (ArrayList)attrv);
 			
 			logger.debug("ScopedName: " + v.getScopedName(null));
+			
+			// hier sql create table? inkl. enumerations in table?
+			
 
 			ViewableWrapper wrapper=new ViewableWrapper(v.getScopedName(null),v);
 			wrapper.setAttrv(attrv);
