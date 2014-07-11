@@ -321,11 +321,11 @@ public class ModelUtility
 			logger.debug("===========================================================================");
 
 			Viewable v = (Viewable) vi.next();
-			logger.debug("baseclass <"+v+">"); // Verebte Klassen besitzen von abstrakten Klassen besitzen bereits deren Attribute.
+			logger.debug("baseclass <"+v+">"); // Verebte Klassen von abstrakten Klassen besitzen bereits deren Attribute.
 			ArrayList attrv=new ArrayList();
 			mergeAttrs(attrv,v,true);
 
-			logger.debug("vorher (base): " + (ArrayList)attrv);
+			logger.debug("vorher (base): " + attrv.size());
 			
 			Iterator exti=((LinkedHashSet)basev.get(v)).iterator(); // Hier werden alle extending Klassen durchgenudelt.
 			while(exti.hasNext()){
@@ -334,7 +334,7 @@ public class ModelUtility
 				mergeAttrs(attrv,ext,false);
 			}
 
-			logger.debug("nacher (ext): " + (ArrayList)attrv);
+			logger.debug("nacher (ext): " + attrv.size());
 			
 			logger.debug("ScopedName: " + v.getScopedName(null));
 			
