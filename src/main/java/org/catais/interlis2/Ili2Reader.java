@@ -99,8 +99,8 @@ public class Ili2Reader
 //    	modelNames.add("Nutzungsplanung_V1");
 //    	modelNames.add("MOpublic03_ili2_v13");
 //    	modelNames.add("Nutzungsplanung_KtSO_V20");
-    	modelNames.add("Nutzungsplanung_KtSO_V21");
-//    	modelNames.add("LowDistortionAreas_LV03");
+//    	modelNames.add("Nutzungsplanung_KtSO_V21");
+    	modelNames.add("LowDistortionAreas_LV03");
 //     	modelNames.add("DM01AVCH24D");
     	
 //    	Configuration config = manager.getConfig(modelNames, 1.0);

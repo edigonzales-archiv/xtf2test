@@ -6,11 +6,17 @@ import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 
 import ch.interlis.ili2c.metamodel.*;
+import ch.interlis.iom.IomObject;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.catais.interlis.db.DbColumn;
+import org.catais.interlis.db.DbSchema;
+import org.catais.interlis.db.DbTable;
+import org.opengis.geometry.primitive.Surface;
 
 public class ModelUtility 
 {
@@ -113,6 +119,24 @@ public class ModelUtility
 	
 
 	public static String getPgSqlFromIli2(ch.interlis.ili2c.metamodel.TransferDescription td, int inheritanceMappingStrategy) {
+		Map CLASS_MAPPINGS = new HashMap();
+
+		CLASS_MAPPINGS.put(SurfaceType.class, "POLYGON");
+		CLASS_MAPPINGS.put(td.INTERLIS.XmlDateTime, "timestamp");
+		CLASS_MAPPINGS.put(TextType.class, "varchar");
+//		CLASS_MAPPINGS.put(Long.class, "BIGINT");
+//		CLASS_MAPPINGS.put(Float.class, "REAL");
+//		CLASS_MAPPINGS.put(Double.class, "DOUBLE PRECISION");
+//		CLASS_MAPPINGS.put(BigDecimal.class, "DECIMAL");
+//		CLASS_MAPPINGS.put(java.sql.Date.class, "DATE");
+//		CLASS_MAPPINGS.put(java.util.Date.class, "DATE");
+//		CLASS_MAPPINGS.put(java.sql.Time.class, "TIME");
+//		CLASS_MAPPINGS.put(java.sql.Timestamp.class, "TIMESTAMP");				
+		
+		final String defaultSrsCode = "21781";
+		
+		final String lastModelName = td.getLastModel().getName();
+		
 		StringBuffer sql = new StringBuffer();
 		
 		Logger logger = Logger.getLogger(ModelUtility.class);
@@ -137,24 +161,24 @@ public class ModelUtility
 				while (topici.hasNext()) {
 					Object tObj = topici.next(); // STRUCTURE, DOMAIN, TOPIC
 					
-					logger.debug(tObj.toString());
+//					logger.debug(tObj.toString());
 					
 					if ( tObj instanceof Domain ) {
 						
 						Type domainType = ((Domain) tObj).getType();
 						
-						logger.debug(domainType.toString());
+//						logger.debug(domainType.toString());
 
 						
 						if (domainType instanceof EnumerationType) 
 						{
-							logger.debug("** Enumerations MODEL");
+//							logger.debug("** Enumerations MODEL");
 							
 							EnumerationType enumerationType = (EnumerationType) domainType;
 							ch.interlis.ili2c.metamodel.Enumeration enumerations = (ch.interlis.ili2c.metamodel.Enumeration) enumerationType.getConsolidatedEnumeration();
 							
 							String enumName = model.getName().toLowerCase() + "_" + ((Domain) tObj).getName().toLowerCase();
-							logger.debug(enumName);
+//							logger.debug(enumName);
 							
 							ArrayList ev = new ArrayList();
 							ch.interlis.iom_j.itf.ModelUtilities.buildEnumList(ev, "", ((EnumerationType) domainType).getConsolidatedEnumeration());
@@ -168,19 +192,27 @@ public class ModelUtility
 
 							
 						} else if (domainType instanceof TextOIDType) {
+//							logger.debug(tObj.toString());
+							
 							TextOIDType oidType = (TextOIDType) domainType;
-							logger.debug(oidType.getOIDType());
+//							logger.debug(oidType.getOIDType());
 						}
 						
 						
 					} else if (tObj instanceof Topic) { // TOPIC
 						Topic topic=(Topic)tObj;
 						
-//						logger.debug("topic <"+topic+">");
+						logger.debug("topic <"+topic+">");
+						
+						// Aha, so bekomm ich die OID-Geschichte.
+						// Müsste natürlich auch für Klassen etc. gemacht werden.
+						logger.debug(topic.getBasketOid());
+						logger.debug(topic.getOid());
 						
 						Iterator iter = topic.iterator();
 						while (iter.hasNext()) {
 							Object obj = iter.next();
+//							logger.debug("topic obj: " + obj.toString());
 							
 							if (obj instanceof Domain) {
 								logger.debug(obj.toString());
@@ -196,7 +228,7 @@ public class ModelUtility
 									ch.interlis.ili2c.metamodel.Enumeration enumerations = (ch.interlis.ili2c.metamodel.Enumeration) enumerationType.getConsolidatedEnumeration();
 									
 									String enumName = model.getName().toLowerCase() + "_" + ((Domain) obj).getName().toLowerCase();
-									logger.debug(enumName);
+//									logger.debug(enumName);
 									
 									ArrayList ev = new ArrayList();
 									ch.interlis.iom_j.itf.ModelUtilities.buildEnumList(ev, "", ((EnumerationType) domainType).getConsolidatedEnumeration());
@@ -205,21 +237,26 @@ public class ModelUtility
 									{
 //										logger.debug(ev.get(i));
 									}
-								}
+								} 
 							} else if (obj instanceof Viewable) {
-								logger.debug(obj.toString());
+//								logger.debug(obj.toString());
 
 								Viewable v = (Viewable) obj;
 								if(isDerivedAssoc(v) 
 										|| isPureRefAssoc(v) // Wenns nur ein billiger foreign key gibt. -> Kommt das als RoleDef nochmals?
 										|| isTransientView(v)){
 									
-									logger.debug("isPureRefAssoc??: " + v.toString());
+//									logger.debug("isPureRefAssoc??: " + v.toString());
 									 
 									continue;
 								}
-								logger.debug("leaveclass (Topic) <"+v+">");
+//								logger.debug("leaveclass (Topic) <"+v+">");
 								leaveclassv.add(v);
+								
+								// Falls Class/Table separate OID Definition?!
+								if (obj instanceof Table) {
+									logger.debug(((Table) obj).getOid());
+								}
 							}
 						}
 					} else if (tObj instanceof Viewable) { // STRUCTURE, .. ?
@@ -237,17 +274,17 @@ public class ModelUtility
 		}
 		
 		logger.debug("1. Runde: *************************************************************************");
-		logger.debug(leaveclassv.toString());
-		logger.debug("*************************************************************************");
+//		logger.debug(leaveclassv.toString());
+//		logger.debug("*************************************************************************");
 
 		// find base classes and add possible extensions
 		Iterator vi = leaveclassv.iterator();
 		LinkedHashMap basev = new LinkedHashMap(); // map<Viewable root,HashSet<Viewable extensions>> 
 		
 		while(vi.hasNext()) {
-			logger.debug("===========================================================================");
+//			logger.debug("===========================================================================");
 			Viewable v = (Viewable) vi.next();
-			logger.debug("leaveclass <"+v+">");
+//			logger.debug("leaveclass <"+v+">");
 //			logger.debug(v.getContainerOrSame(Model.class).toString());
 			// is it a CLASS defined in model INTERLIS? 
 			if((v instanceof Table) && ((Table)v).isIdentifiable() && v.getContainerOrSame(Model.class) == td.INTERLIS) {
@@ -272,11 +309,11 @@ public class ModelUtility
 					root=null;
 				}
 			} else { // SUPERCLASS
-				logger.debug("getRoot" + v);
+//				logger.debug("getRoot" + v);
 				root = getRoot(v);
 			}
 			
-			logger.debug("  root <"+root+">");
+//			logger.debug("  root <"+root+">");
 			
 			// Nur Objekte, die root == null haben (also 'root' sind) werden basev hinzugefügt (nur key, kein object).
 			// Falls root <> null wird dieses root basev hinzugefügt resp. (vorhanden ist es ja wo es als "v" gekommen ist) es wird
@@ -284,34 +321,40 @@ public class ModelUtility
 			// -> in basev sind nur root Objekte. (mit den Ausnahmen, z.B. für SUBCLASS keine abstrakten Klassen.)
 			if (root == null) {
 				if (!basev.containsKey(v)) {
-					logger.debug("add to basev: " + v.toString());
+//					logger.debug("add to basev: " + v.toString());
 					basev.put(v,new LinkedHashSet());
 				}
 			} else {
 
-				logger.debug("root NOT NULL");
+//				logger.debug("root NOT NULL");
 				
 				LinkedHashSet extv;
 				if (basev.containsKey(root)) {
 					extv = (LinkedHashSet) basev.get(root);
-					logger.debug(extv);
+//					logger.debug(extv);
 				} else {
 					extv = new LinkedHashSet();
 					basev.put(root, extv);
-					logger.debug("else");
+//					logger.debug("else");
 				}
 				while (v!=root) {
-					logger.debug(v);					
+//					logger.debug(v);					
 					extv.add(v);
 					v=(Viewable)v.getExtending();
 				}
-				logger.debug(extv.toString());
+//				logger.debug(extv.toString());
 
 			}			
-			logger.debug("===========================================================================");
+//			logger.debug("===========================================================================");
 		}
 		
-				
+		/*
+		 * Start sql-generation here.
+		 */
+		
+		DbSchema dbSchema = new DbSchema("av_lowdistortionareas");		
+		
+		
 		logger.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
 		
 		// build list of attributes
@@ -337,11 +380,141 @@ public class ModelUtility
 			logger.debug("nacher (ext): " + attrv.size());
 			
 			logger.debug("ScopedName: " + v.getScopedName(null));
+			logger.debug("Name: " + v.getName());
+			
 			
 			// hier sql create table? inkl. enumerations in table?
 			// wie komme ich an die OID bedingung? uuid etc. für model anscheinend gelöst. siehe oben domain
 			// bag lists? modell?
 			// könnte ich die importierten enumerations nicht erst bei der tabelle behandeln? sonst importieren ich ja jeden mist?!
+		
+			String scopedName = v.getScopedName(null);
+			
+			String[] splittedName = scopedName.split("\\.");
+			String modelName = splittedName[0];
+			
+			if (!modelName.equalsIgnoreCase(lastModelName)) {
+				continue;
+			}
+			
+			logger.debug("******* NEUE DB-TABELLE");
+			String tableName = scopedName.substring(scopedName.indexOf(".")+1).replace(".", "_").toLowerCase();
+			
+			DbTable dbTable = new DbTable(tableName);
+			dbTable.addColumn("tid", new DbColumn("tid", "varchar(255)", true)); // Die Länge ergäbe sich aus der OID-Geschichte.
+			dbTable.setPrimaryKey("ogc_fid");
+			
+			// OID-Bedingung herausfinden.
+			// Falls NULL -> OID vom Container prüfen.
+			// Wird momentan nicht berücksichtigt!
+			
+			
+			// NUR ein Type -> am schluss if/else was für eine oid,
+			// falls null -> varchar oder so.
+			if (v instanceof Table) {
+				Table table = (Table) v;
+				if (table.getOid() != null) {
+					
+					
+					
+					
+				} else {
+					logger.debug("table oid is null");
+					if (v.getContainer() instanceof Topic) {
+						Topic topic = (Topic) v.getContainer();
+						if (topic.getOid() == null) {
+							logger.debug("topic oid is null");
+							logger.debug("varchar(255)");
+						} else {
+						
+						}
+					}
+				}
+
+				
+				
+				if (v.getContainer() instanceof Topic) {
+					Topic topic = (Topic) v.getContainer();
+					logger.debug(topic);
+					logger.debug(topic.getOid());
+					if (topic.getOid() == null) {
+						logger.debug("NULLLL -> Container prüfen -> tid");
+					} else {
+						Domain domain = (Domain) topic.getOid();
+						
+						
+						
+						TextOIDType oidType = (TextOIDType) domain.getType();
+						logger.debug(oidType.getOIDType());
+					}
+				}
+			}
+			
+			
+			Iterator attri = attrv.iterator();
+
+			while (attri.hasNext()) {	
+				ch.interlis.ili2c.metamodel.ViewableTransferElement attrObj = (ch.interlis.ili2c.metamodel.ViewableTransferElement) attri.next();
+								
+				// Wie geht man mit Multigeometrien um?
+				// Bags/Lists?
+				if (attrObj.obj instanceof AttributeDef) {
+						AttributeDef attrdefObj = (AttributeDef) attrObj.obj;
+//						Type type = attrdefObj.getDomainResolvingAliases(); 
+						Type type = attrdefObj.getDomain(); 
+						
+						String sqlAttrName = attrdefObj.getName();
+						String sqlAttrType = null;
+						logger.debug(attrdefObj.getName());
+						logger.debug(type.toString());
+						
+						
+						if (type instanceof TypeAlias) {
+							if (((TypeAlias) type).getAliasing() == td.INTERLIS.BOOLEAN) {
+								// todo
+							} else if (((TypeAlias) type).getAliasing() == td.INTERLIS.XmlDate) {
+								// todo
+							} else if (((TypeAlias) type).getAliasing() == td.INTERLIS.XmlDateTime) {
+								sqlAttrType = (String) CLASS_MAPPINGS.get(((TypeAlias) type).getAliasing());
+
+								logger.debug(sqlAttrType);								
+							} else if (((TypeAlias) type).getAliasing() == td.INTERLIS.XmlTime) {
+								// todo
+							} else {
+								// todo
+							}
+						} else if (type instanceof SurfaceType) {
+							SurfaceType surfaceType = (SurfaceType) type;
+							
+							sqlAttrType = "geometry(" + 
+									CLASS_MAPPINGS.get(surfaceType.getClass()) + ", " + defaultSrsCode + ")";
+							
+							logger.debug(sqlAttrType);
+						} else if (type instanceof TextType) {
+							TextType textType = (TextType) type;
+							
+							sqlAttrType = (String) CLASS_MAPPINGS.get(textType.getClass()) +
+									"(" + textType.getMaxLength() + ")";
+							
+							logger.debug(sqlAttrType);
+						}
+						
+						DbColumn dbColumn = new DbColumn(sqlAttrName, sqlAttrType, type.isMandatory());
+						dbTable.addColumn(sqlAttrName, dbColumn);	
+//						dbTable.toSql();
+
+
+				}
+			}
+//				ch.interlis.ili2c.metamodel.ViewableTransferElement attrObj = (ch.interlis.ili2c.metamodel.ViewableTransferElement) attri.next();
+//
+//				if( attrObj.obj instanceof AttributeDef ) 
+//                {
+//					AttributeDef attrdefObj = (AttributeDef) attrObj.obj;
+//					Type type = attrdefObj.getDomainResolvingAliases(); 
+//
+//					String attr
+			
 			
 
 			ViewableWrapper wrapper=new ViewableWrapper(v.getScopedName(null),v);
@@ -384,9 +557,11 @@ public class ModelUtility
 			
 			logger.debug("===========================================================================");
 		}
-		
-		
+				
 		logger.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+		
+		logger.debug(dbSchema.toSql());
+		
 		return sql.toString();
 	}
 	
