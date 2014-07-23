@@ -119,11 +119,11 @@ public class ModelUtility
 	
 
 	public static String getPgSqlFromIli2(ch.interlis.ili2c.metamodel.TransferDescription td, int inheritanceMappingStrategy) {
-		Map CLASS_MAPPINGS = new HashMap();
+		Map CLASS_DOMAIN_MAPPINGS = new HashMap();
 
-		CLASS_MAPPINGS.put(SurfaceType.class, "POLYGON");
-		CLASS_MAPPINGS.put(td.INTERLIS.XmlDateTime, "timestamp");
-		CLASS_MAPPINGS.put(TextType.class, "varchar");
+		CLASS_DOMAIN_MAPPINGS.put(SurfaceType.class, "POLYGON");
+		CLASS_DOMAIN_MAPPINGS.put(td.INTERLIS.XmlDateTime, "timestamp");
+		CLASS_DOMAIN_MAPPINGS.put(TextType.class, "varchar");
 //		CLASS_MAPPINGS.put(Long.class, "BIGINT");
 //		CLASS_MAPPINGS.put(Float.class, "REAL");
 //		CLASS_MAPPINGS.put(Double.class, "DOUBLE PRECISION");
@@ -364,7 +364,7 @@ public class ModelUtility
 			logger.debug("===========================================================================");
 
 			Viewable v = (Viewable) vi.next();
-			logger.debug("baseclass <"+v+">"); // Verebte Klassen von abstrakten Klassen besitzen bereits deren Attribute.
+			logger.debug("baseclass <"+v+">"); // Vererbte Klassen von abstrakten Klassen besitzen bereits deren Attribute.
 			ArrayList attrv=new ArrayList();
 			mergeAttrs(attrv,v,true);
 
@@ -401,51 +401,58 @@ public class ModelUtility
 			String tableName = scopedName.substring(scopedName.indexOf(".")+1).replace(".", "_").toLowerCase();
 			
 			DbTable dbTable = new DbTable(tableName);
-			dbTable.addColumn("tid", new DbColumn("tid", "varchar(255)", true)); // Die Länge ergäbe sich aus der OID-Geschichte.
 			dbTable.setPrimaryKey("ogc_fid");
 			
-			// OID-Bedingung herausfinden.
-			// Falls NULL -> OID vom Container prüfen.
-			// Wird momentan nicht berücksichtigt!
-			
-			
-			// NUR ein Type -> am schluss if/else was für eine oid,
-			// falls null -> varchar oder so.
+			// OID der Tabelle eruieren.
 			if (v instanceof Table) {
 				Table table = (Table) v;
 				if (table.getOid() != null) {
+					logger.debug("Table hat EIGENE OID-Bedingung");
+					Domain domain = (Domain) table.getOid();
+					Type type = domain.getType();
 					
-					
-					
-					
+					if (type instanceof TextOIDType) {
+						TextOIDType oidType = (TextOIDType) domain.getType();
+						logger.debug(oidType);								
+						// standard hat länge 16
+						// uuid hat länge 32
+						// wie finde ich da den unterschied? sind beides textoidtype?
+						// domain.getName() liefert UUIDOID zurück. Ist das eindeutig? 
+						// Oder kann das auch wieder anders heissen?
+//						logger.debug("sql type");
+					} else if (type instanceof NumericOIDType) {
+						NumericOIDType oidType = (NumericOIDType) domain.getType();
+					} else if (type instanceof AnyOIDType) {
+						ch.interlis.ili2c.metamodel.
+						AnyOIDType oidType = (AnyOIDType) domain.getType();
+					} 
 				} else {
-					logger.debug("table oid is null");
 					if (v.getContainer() instanceof Topic) {
 						Topic topic = (Topic) v.getContainer();
 						if (topic.getOid() == null) {
-							logger.debug("topic oid is null");
-							logger.debug("varchar(255)");
+							// keine OID? 'nur' TID?	
+							logger.debug("varchar(32)");
 						} else {
-						
+							logger.debug("TABLE hat OID-Bedingung von Topic");
+							
+							Domain domain = (Domain) topic.getOid();
+							Type type = domain.getType();
+							
+							if (type instanceof TextOIDType) {
+								TextOIDType oidType = (TextOIDType) domain.getType();
+								
+								DbColumn dbcolumn = new DbColumn("tid", "varchar(32)");
+								dbcolumn.setIsUnique(true);
+								dbTable.addColumn("tid", dbcolumn); 
+								
+								logger.debug(oidType);		
+							} else if (type instanceof NumericOIDType) {
+								NumericOIDType oidType = (NumericOIDType) domain.getType();
+							} else if (type instanceof AnyOIDType) {
+								ch.interlis.ili2c.metamodel.
+								AnyOIDType oidType = (AnyOIDType) domain.getType();
+							} 
 						}
-					}
-				}
-
-				
-				
-				if (v.getContainer() instanceof Topic) {
-					Topic topic = (Topic) v.getContainer();
-					logger.debug(topic);
-					logger.debug(topic.getOid());
-					if (topic.getOid() == null) {
-						logger.debug("NULLLL -> Container prüfen -> tid");
-					} else {
-						Domain domain = (Domain) topic.getOid();
-						
-						
-						
-						TextOIDType oidType = (TextOIDType) domain.getType();
-						logger.debug(oidType.getOIDType());
 					}
 				}
 			}
@@ -456,14 +463,15 @@ public class ModelUtility
 			while (attri.hasNext()) {	
 				ch.interlis.ili2c.metamodel.ViewableTransferElement attrObj = (ch.interlis.ili2c.metamodel.ViewableTransferElement) attri.next();
 								
+				boolean isGeometry = false;
+				
 				// Wie geht man mit Multigeometrien um?
 				// Bags/Lists?
 				if (attrObj.obj instanceof AttributeDef) {
 						AttributeDef attrdefObj = (AttributeDef) attrObj.obj;
-//						Type type = attrdefObj.getDomainResolvingAliases(); 
 						Type type = attrdefObj.getDomain(); 
 						
-						String sqlAttrName = attrdefObj.getName();
+						String sqlAttrName = attrdefObj.getName().toLowerCase();
 						String sqlAttrType = null;
 						logger.debug(attrdefObj.getName());
 						logger.debug(type.toString());
@@ -475,8 +483,7 @@ public class ModelUtility
 							} else if (((TypeAlias) type).getAliasing() == td.INTERLIS.XmlDate) {
 								// todo
 							} else if (((TypeAlias) type).getAliasing() == td.INTERLIS.XmlDateTime) {
-								sqlAttrType = (String) CLASS_MAPPINGS.get(((TypeAlias) type).getAliasing());
-
+								sqlAttrType = (String) CLASS_DOMAIN_MAPPINGS.get(((TypeAlias) type).getAliasing());
 								logger.debug(sqlAttrType);								
 							} else if (((TypeAlias) type).getAliasing() == td.INTERLIS.XmlTime) {
 								// todo
@@ -484,24 +491,31 @@ public class ModelUtility
 								// todo
 							}
 						} else if (type instanceof SurfaceType) {
+							isGeometry = true;
 							SurfaceType surfaceType = (SurfaceType) type;
 							
 							sqlAttrType = "geometry(" + 
-									CLASS_MAPPINGS.get(surfaceType.getClass()) + ", " + defaultSrsCode + ")";
+									CLASS_DOMAIN_MAPPINGS.get(surfaceType.getClass()) + 
+									", " + defaultSrsCode + ")";
 							
 							logger.debug(sqlAttrType);
 						} else if (type instanceof TextType) {
 							TextType textType = (TextType) type;
 							
-							sqlAttrType = (String) CLASS_MAPPINGS.get(textType.getClass()) +
+							sqlAttrType = (String) CLASS_DOMAIN_MAPPINGS.get(textType.getClass()) +
 									"(" + textType.getMaxLength() + ")";
 							
 							logger.debug(sqlAttrType);
 						}
 						
-						DbColumn dbColumn = new DbColumn(sqlAttrName, sqlAttrType, type.isMandatory());
+						
+						
+						DbColumn dbColumn = new DbColumn(sqlAttrName, sqlAttrType);
+						dbColumn.setIsMandatory(type.isMandatory());
+						dbColumn.setIsGeometry(isGeometry);
+						
 						dbTable.addColumn(sqlAttrName, dbColumn);	
-//						dbTable.toSql();
+						logger.debug(dbTable.toSql());
 
 
 				}

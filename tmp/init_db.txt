@@ -1,0 +1,43 @@
+CREATE ROLE stefan CREATEDB LOGIN PASSWORD 'ziegler12';
+CREATE ROLE mspublic LOGIN PASSWORD 'mspublic';
+
+createdb --owner stefan rosebud2
+createlang plpgsql rosebud2
+
+psql -d rosebud -f /usr/share/postgresql/9.3/contrib/postgis-2.1/postgis.sql
+psql -d rosebud -f /usr/share/postgresql/9.3/contrib/postgis-2.1/spatial_ref_sys.sql
+psql -d rosebud -f /usr/share/postgresql/9.3/contrib/postgis-2.1/postgis_comments.sql
+
+
+
+psql -d rosebud2 -f /usr/share/postgresql/9.1/contrib/postgis-2.0/postgis.sql
+psql -d rosebud2 -f /usr/share/postgresql/9.1/contrib/postgis-2.0/spatial_ref_sys.sql
+psql -d rosebud2 -f /usr/share/postgresql/9.1/contrib/postgis-2.0/postgis_comments.sql
+
+psql -d rosebud2 -f /usr/share/postgresql/9.1/contrib/postgis-2.1/postgis.sql
+psql -d rosebud2 -f /usr/share/postgresql/9.1/contrib/postgis-2.1/spatial_ref_sys.sql
+psql -d rosebud2 -f /usr/share/postgresql/9.1/contrib/postgis-2.1/postgis_comments.sql
+
+psql -d rosebud2 -f /usr/share/postgresql/8.4/contrib/postgis-2.0/postgis.sql
+psql -d rosebud2 -f /usr/share/postgresql/8.4/contrib/postgis-2.0/spatial_ref_sys.sql
+psql -d rosebud2 -f /usr/share/postgresql/8.4/contrib/postgis-2.0/postgis_comments.sql
+
+GRANT ALL ON SCHEMA public TO stefan;
+
+GRANT SELECT ON geometry_columns TO mspublic;
+GRANT SELECT ON spatial_ref_sys TO mspublic;
+GRANT SELECT ON geography_columns TO mspublic;
+ALTER TABLE geometry_columns OWNER TO stefan;
+GRANT SELECT ON spatial_ref_sys TO stefan;
+GRANT SELECT ON geography_columns TO stefan;
+
+GRANT ALL ON geometry_columns TO stefan;
+GRANT ALL ON spatial_ref_sys TO stefan;
+GRANT ALL ON geography_columns TO stefan;
+
+GRANT SELECT ON geometry_columns TO mspublic;
+GRANT SELECT ON spatial_ref_sys TO mspublic;
+GRANT SELECT ON geography_columns TO mspublic;
+
+ALTER TABLE geometry_columns OWNER TO stefan;
+

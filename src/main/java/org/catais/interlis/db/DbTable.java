@@ -1,6 +1,8 @@
 package org.catais.interlis.db;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 
 public class DbTable {
@@ -86,15 +88,79 @@ public class DbTable {
 		return comment;
 	}
 	
-	public String toSql() {
+	public String toSql(String schema) {
 		StringBuffer buf = new StringBuffer();
 		
+		buf.append("CREATE TABLE " + schema + "." + name + "\n");
+		buf.append("(\n");
+		
+		int i = 1;
 		for (DbColumn column : columns.values()) {
-			System.out.println("Value = " + column.getType());
+			buf.append(" " + column.getName() + " " + column.getType());
+			
+			if (i != columns.size()) {
+				buf.append(",");
+				i++;
+			}
+			
+			buf.append("\n");
+		}
+		buf.append(")\n");
+		
+		// PostgreSQL OIDS
+		buf.append("WITH (\n");
+		if (withOids) {
+			buf.append("  OIDS=TRUE\n");
+		} else {
+			buf.append("  OIDS=FALSE\n");
+		}
+		buf.append(");\n\n");
+		
+		// Primary Keys
+		if (primaryKey.size() > 0) {
+			buf.append("ALTER TABLE " + schema + "." + name + " ADD PRIMARY KEY (");
+			
+			int j = 1;
+			for (String pKey : primaryKey) {
+				buf.append("\"" + pKey + "\"");
+				if (j != primaryKey.size()) {
+					buf.append(", ");
+					j++;
+				}
+			}
+			buf.append(");\n\n");
+
 		}
 		
+		// Permissions
+		buf.append("ALTER TABLE " + schema + "." + name + " OWNER TO " + owner + ";\n");
+		buf.append("SELECT ON TABLE " + schema + "." + name + " TO " + user + ";\n\n");
 		
+		// Indexes
+		buf.append("CREATE INDEX idx_" + schema + "_" + name + "_ogc_fid\n");
+		buf.append("  ON " + schema + "." + name + "\n");
+		buf.append("  USING btree\n");
+		buf.append("  (ogc_fid)\n\n");
+		
+		buf.append("CREATE INDEX idx_" + schema + "_" + name + "_tid\n");
+		buf.append("  ON " + schema + "." + name + "\n");
+		buf.append("  USING btree\n");
+		buf.append("  (tid)\n\n");
+
+		for (DbColumn column : columns.values()) {
+			if (column.getIsGeometry()){
+				buf.append("CREATE INDEX idx_" + schema + "_" + name + "_" + column.getName() + "\n");
+				buf.append("  ON " + schema + "." + name + "\n");
+				buf.append("  USING gist\n");
+				buf.append("  (" + column.getName() + ")\n\n");
+			}
+		}
+
 		return buf.toString();
+	}
+	
+	public String toSql() {
+		return toSql("public");
 	}
 	
 }
