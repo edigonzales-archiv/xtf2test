@@ -134,28 +134,27 @@ public class DbTable {
 		
 		// Permissions
 		buf.append("ALTER TABLE " + schema + "." + name + " OWNER TO " + owner + ";\n");
-		buf.append("SELECT ON TABLE " + schema + "." + name + " TO " + user + ";\n\n");
+		buf.append("GRANT SELECT ON TABLE " + schema + "." + name + " TO " + user + ";\n\n");
 		
 		// Indexes
-		buf.append("CREATE INDEX idx_" + schema + "_" + name + "_ogc_fid\n");
+		buf.append("CREATE INDEX idx_" + name + "_ogc_fid\n");
 		buf.append("  ON " + schema + "." + name + "\n");
 		buf.append("  USING btree\n");
-		buf.append("  (ogc_fid)\n\n");
+		buf.append("  (ogc_fid);\n\n");
 		
-		buf.append("CREATE INDEX idx_" + schema + "_" + name + "_tid\n");
+		buf.append("CREATE INDEX idx_" + name + "_tid\n");
 		buf.append("  ON " + schema + "." + name + "\n");
 		buf.append("  USING btree\n");
-		buf.append("  (tid)\n\n");
+		buf.append("  (tid);\n\n");
 
 		for (DbColumn column : columns.values()) {
 			if (column.getIsGeometry()){
-				buf.append("CREATE INDEX idx_" + schema + "_" + name + "_" + column.getName() + "\n");
+				buf.append("CREATE INDEX idx_" + name + "_" + column.getName() + "\n");
 				buf.append("  ON " + schema + "." + name + "\n");
 				buf.append("  USING gist\n");
-				buf.append("  (" + column.getName() + ")\n\n");
+				buf.append("  (" + column.getName() + ");\n\n");
 			}
 		}
-
 		return buf.toString();
 	}
 	

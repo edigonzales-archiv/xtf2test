@@ -30,7 +30,11 @@ public class DbSchema {
 		
 		buf.append("CREATE SCHEMA " + name + " AUTHORIZATION " + owner + ";\n");
 		buf.append("GRANT ALL ON SCHEMA " + name + " TO " + owner + ";\n");
-		buf.append("GRANT USAGE ON " + name + " TO " + user + ";\n");
+		buf.append("GRANT USAGE ON SCHEMA " + name + " TO " + user + ";\n\n");
+		
+		for (DbTable table : tables.values()) {
+			buf.append(table.toSql(name));
+		}
 		
 		return buf.toString();
 	}

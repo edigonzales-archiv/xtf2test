@@ -1,5 +1,10 @@
 package org.catais.interlis2;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,7 +40,7 @@ public class Ili2Reader
     	logger.setLevel(Level.DEBUG);
 
 		compile();
-		
+				
 //		ViewableWrapper foo = (ViewableWrapper) transferViewables.get("Nutzungsplanung_V1.Geobasisdaten.Grundnutzung_Zonenflaeche");
 //		ViewableTransferElement bar = (ViewableTransferElement) foo.getAttrv().get(3);
 //		logger.debug(bar.obj);
@@ -85,6 +90,22 @@ public class Ili2Reader
 //			it.remove();
 //		}
 
+	}
+
+	public void getPgSql(String fileName) {
+		String sql = null;
+		
+		if (formatMode == MODE_XTF) {
+	   		sql = ModelUtility.getPgSqlFromIli2(iliTd, 2);  	
+		}
+		
+		try (BufferedWriter writer = Files.newBufferedWriter(
+				Paths.get(fileName), Charset.defaultCharset())) {
+				writer.write(sql);
+		} catch(IOException e){
+			logger.error(e.getMessage());
+		}
+
 		
 		
 	}
@@ -121,7 +142,6 @@ public class Ili2Reader
 //			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, inheritanceMapping);
 //			transferViewables = ModelUtility.getXtfTransferViewables(iliTd, 2);
        		
-       		String sql = ModelUtility.getPgSqlFromIli2(iliTd, 2);
        	} else if (formatMode == MODE_ITF) {
 			transferViewables = ModelUtility.getItfTransferViewables(iliTd);
        	}

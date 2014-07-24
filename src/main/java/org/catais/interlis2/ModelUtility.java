@@ -136,9 +136,7 @@ public class ModelUtility
 		final String defaultSrsCode = "21781";
 		
 		final String lastModelName = td.getLastModel().getName();
-		
-		StringBuffer sql = new StringBuffer();
-		
+				
 		Logger logger = Logger.getLogger(ModelUtility.class);
 		logger.setLevel(Level.DEBUG);
 				
@@ -431,7 +429,7 @@ public class ModelUtility
 						Topic topic = (Topic) v.getContainer();
 						if (topic.getOid() == null) {
 							// keine OID? 'nur' TID?	
-							logger.debug("varchar(32)");
+							logger.debug("varchar(36)");
 						} else {
 							logger.debug("TABLE hat OID-Bedingung von Topic");
 							
@@ -441,7 +439,7 @@ public class ModelUtility
 							if (type instanceof TextOIDType) {
 								TextOIDType oidType = (TextOIDType) domain.getType();
 								
-								DbColumn dbcolumn = new DbColumn("tid", "varchar(32)");
+								DbColumn dbcolumn = new DbColumn("tid", "varchar(36)");
 								dbcolumn.setIsUnique(true);
 								dbTable.addColumn("tid", dbcolumn); 
 								
@@ -508,18 +506,17 @@ public class ModelUtility
 							logger.debug(sqlAttrType);
 						}
 						
-						
-						
 						DbColumn dbColumn = new DbColumn(sqlAttrName, sqlAttrType);
 						dbColumn.setIsMandatory(type.isMandatory());
 						dbColumn.setIsGeometry(isGeometry);
-						
 						dbTable.addColumn(sqlAttrName, dbColumn);	
-						logger.debug(dbTable.toSql());
-
-
+//						logger.debug(dbTable.toSql());
 				}
 			}
+			
+			dbSchema.addTable(dbTable.getName(), dbTable);
+			
+			
 //				ch.interlis.ili2c.metamodel.ViewableTransferElement attrObj = (ch.interlis.ili2c.metamodel.ViewableTransferElement) attri.next();
 //
 //				if( attrObj.obj instanceof AttributeDef ) 
@@ -574,9 +571,10 @@ public class ModelUtility
 				
 		logger.debug("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
 		
-		logger.debug(dbSchema.toSql());
 		
-		return sql.toString();
+//		logger.debug(dbSchema.toSql());
+		
+		return dbSchema.toSql();
 	}
 	
 	

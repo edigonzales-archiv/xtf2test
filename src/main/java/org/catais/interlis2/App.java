@@ -24,6 +24,7 @@ public class App
 		
 		try {
 			Ili2Reader ili2reader = new Ili2Reader();
+			ili2reader.getPgSql("/home/stefan/tmp/low_distortion.sql");
 
 			
 		} catch (Ili2cException e) {
