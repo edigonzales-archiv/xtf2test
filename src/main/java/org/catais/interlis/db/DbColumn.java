@@ -4,8 +4,8 @@ public class DbColumn {
 	
 	private String name = null;
 	private String type = null;
-	private boolean isMandatory = true;
-	private boolean isUnique = true;
+	private boolean isMandatory = false;
+	private boolean isUnique = false;
 	private boolean isGeometry = false;
 	
 	public DbColumn(String columnName, String columnType, boolean isMandatoryColumn) {

@@ -98,6 +98,14 @@ public class DbTable {
 		for (DbColumn column : columns.values()) {
 			buf.append(" " + column.getName() + " " + column.getType());
 			
+			if (column.getIsUnique()) {
+				buf.append(" UNIQUE");
+			}
+			
+			if (column.getIsMandatory()) {
+				buf.append(" NOT NULL");
+			}
+			
 			if (i != columns.size()) {
 				buf.append(",");
 				i++;
@@ -154,7 +162,7 @@ public class DbTable {
 				buf.append("  USING gist\n");
 				buf.append("  (" + column.getName() + ");\n\n");
 			}
-		}
+		}		
 		return buf.toString();
 	}
 	

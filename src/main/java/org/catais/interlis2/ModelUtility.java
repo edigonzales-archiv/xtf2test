@@ -439,7 +439,13 @@ public class ModelUtility
 							if (type instanceof TextOIDType) {
 								TextOIDType oidType = (TextOIDType) domain.getType();
 								
-								DbColumn dbcolumn = new DbColumn("tid", "varchar(36)");
+								DbColumn dbcolumn = null;
+								if (domain.getName().equalsIgnoreCase("UUIDOID")) {
+									dbcolumn = new DbColumn("tid", "uuid");
+								} else {
+									dbcolumn = new DbColumn("tid", "varchar(16)");
+								}
+								
 								dbcolumn.setIsUnique(true);
 								dbTable.addColumn("tid", dbcolumn); 
 								
@@ -527,7 +533,8 @@ public class ModelUtility
 //					String attr
 			
 			
-
+			
+			// WAS MACHT DAS???
 			ViewableWrapper wrapper=new ViewableWrapper(v.getScopedName(null),v);
 			wrapper.setAttrv(attrv);
 			boolean isEncodedAsStruct=isStructure(v) || isEmbeddedAssocWithAttrs(v);
